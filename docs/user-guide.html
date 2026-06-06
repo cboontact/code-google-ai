@@ -32,6 +32,8 @@
     code { font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; background:#f1f5f9; border:1px solid #e2e8f0; border-radius:5px; padding:1px 5px; font-size:.92em; }
     pre { background:var(--code); color:#e2e8f0; border-radius:8px; padding:16px; overflow:auto; margin:14px 0 22px; line-height:1.6; }
     pre code { background:transparent; border:0; padding:0; color:inherit; }
+    .mermaid { margin:16px 0 24px; padding:18px; overflow:auto; border:1px solid var(--line); border-radius:8px; background:#fff; text-align:center; }
+    .mermaid svg { max-width:100%; height:auto; }
     .table-wrap { overflow:auto; margin:14px 0 22px; border:1px solid var(--line); border-radius:8px; }
     table { width:100%; border-collapse:collapse; background:#fff; font-size:14px; }
     th, td { padding:10px 12px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
@@ -235,7 +237,7 @@
 </ul>
 <h2 id="7-ขนตอนการทำงานของระบบ">🔄 7. ขั้นตอนการทำงานของระบบ</h2>
 <h3 id="71-flow-การคนหาและยนยนตวตน">🔎 7.1 Flow การค้นหาและยืนยันตัวตน</h3>
-<pre><code class="language-mermaid">flowchart LR
+<div class="mermaid">flowchart LR
     U["ครู/บุคลากร"]
     S["/submit"]
     Search["ค้นหาชื่อ"]
@@ -245,9 +247,9 @@
     U --&gt; S
     S --&gt; Search
     Search --&gt; Auth
-    Auth --&gt; Upload</code></pre>
+    Auth --&gt; Upload</div>
 <h3 id="72-flow-การอพโหลดเกยรตบตร">📤 7.2 Flow การอัพโหลดเกียรติบัตร</h3>
-<pre><code class="language-mermaid">sequenceDiagram
+<div class="mermaid">sequenceDiagram
     participant U as ผู้ใช้งาน
     participant UI as หน้า Submit
     participant API as API Certificates
@@ -260,7 +262,7 @@
     API-&gt;&gt;FS: บันทึกไฟล์ PDF
     API-&gt;&gt;DB: บันทึกหรืออัพเดต certificates
     DB--&gt;&gt;API: สำเร็จ
-    API--&gt;&gt;UI: ส่งผลลัพธ์กลับ</code></pre>
+    API--&gt;&gt;UI: ส่งผลลัพธ์กลับ</div>
 <h3 id="73-flow-การเปดดเกยรตบตร">📄 7.3 Flow การเปิดดูเกียรติบัตร</h3>
 <p>ระบบเปิดไฟล์ผ่าน API แทนการอ้าง path static โดยตรง</p>
 <pre><code class="language-text">GET /api/certificates/{certificateId}</code></pre>
@@ -273,7 +275,7 @@
 </ul>
 <h2 id="8-โครงสรางสถาปตยกรรมระบบ">🧱 8. โครงสร้างสถาปัตยกรรมระบบ</h2>
 <h3 id="81-โครงสรางระดบสง">🏗️ 8.1 โครงสร้างระดับสูง</h3>
-<pre><code class="language-mermaid">flowchart LR
+<div class="mermaid">flowchart LR
     U["ผู้ใช้งาน&lt;br/&gt;ครู / บุคลากร / ผู้ดูแลระบบ"]
     F["Frontend&lt;br/&gt;Next.js App Router + React"]
     A["API Layer&lt;br/&gt;Route Handlers /api/*"]
@@ -283,7 +285,7 @@
     U &lt;--&gt; F
     F &lt;--&gt; A
     A &lt;--&gt; D
-    A &lt;--&gt; S</code></pre>
+    A &lt;--&gt; S</div>
 <h3 id="82-สวนประกอบหลก">🔩 8.2 ส่วนประกอบหลัก</h3>
 <ul>
 <li><code>Frontend</code></li>
@@ -328,7 +330,7 @@
 <p>  เพิ่ม แก้ไข ลบครู ลบไฟล์ และ export CSV</p>
 <h2 id="9-โครงสรางฐานขอมล">🗄️ 9. โครงสร้างฐานข้อมูล</h2>
 <h3 id="91-er-diagram">9.1 ER Diagram</h3>
-<pre><code class="language-mermaid">erDiagram
+<div class="mermaid">erDiagram
     TEACHERS ||--o{ CERTIFICATES : uploads
 
     TEACHERS {
@@ -351,7 +353,7 @@
         int file_size
         timestamp submitted_at
         timestamp updated_at
-    }</code></pre>
+    }</div>
 <h3 id="92-data-dictionary">📚 9.2 Data Dictionary</h3>
 <h4 id="ตาราง-teachers">👩‍🏫 ตาราง <code>teachers</code></h4>
 <p>ตารางนี้เก็บข้อมูลครูและบุคลากรที่มีสิทธิ์ส่งเกียรติบัตร</p>
@@ -520,5 +522,9 @@ npm run build</code></pre>
       </div>
     </main>
   </div>
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ startOnLoad: true, theme: 'default', securityLevel: 'loose' });
+  </script>
 </body>
 </html>
