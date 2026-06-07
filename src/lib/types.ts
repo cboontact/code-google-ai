@@ -50,6 +50,20 @@ export interface DashboardStats {
   }[];
 }
 
+export interface DashboardCourseSubmission {
+  id: number;
+  teacher_id: number;
+  course_id: number;
+  teacher_name: string;
+  department: string;
+  position: string;
+  academic_level: string;
+  file_name: string;
+  file_size: number;
+  submitted_at: string;
+  updated_at: string;
+}
+
 export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;

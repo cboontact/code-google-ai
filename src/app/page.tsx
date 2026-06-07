@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { COURSES } from '@/lib/courses';
-import { DashboardStats, ApiResponse } from '@/lib/types';
+import { DashboardCourseSubmission, DashboardStats, ApiResponse } from '@/lib/types';
 
 // ── Animated counter: นับจาก 0 → target ──────────────────────────────────
 function AnimatedCounter({ value, suffix = '' }: { value: number; suffix?: string }) {
@@ -55,6 +55,11 @@ function formatDate(dateStr: string) {
   });
 }
 
+function formatFileSize(bytes: number) {
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 function StatCard({ icon, label, value, sub, color }: {
   icon: string; label: string; value: string | number; sub?: string; color: string;
 }) {
@@ -84,10 +89,138 @@ function SkeletonCard() {
   );
 }
 
+function CourseSubmissionsModal({
+  course,
+  totalTeachers,
+  submissions,
+  loading,
+  error,
+  onClose,
+}: {
+  course: (typeof COURSES)[number];
+  totalTeachers: number;
+  submissions: DashboardCourseSubmission[];
+  loading: boolean;
+  error: string;
+  onClose: () => void;
+}) {
+  const pct = totalTeachers > 0 ? Math.round((submissions.length / totalTeachers) * 100) : 0;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-4"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div className="flex max-h-[88vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl animate-bounce-in">
+        <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4 sm:px-6">
+          <div className="min-w-0">
+            <div className="mb-2 flex items-center gap-2">
+              <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-primary-100 text-sm font-bold text-primary-700">
+                {course.id}
+              </span>
+              <p className="text-xs font-semibold uppercase tracking-wide text-primary-600">รายละเอียดหลักสูตร</p>
+            </div>
+            <h3 className="text-lg font-bold leading-snug text-slate-900">{course.name}</h3>
+            <p className="mt-1 text-sm text-slate-500">
+              ส่งแล้ว {submissions.length}/{totalTeachers} คน · {pct}% · {course.duration} ชั่วโมง
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+            aria-label="ปิด"
+          >
+            <i className="fa-solid fa-xmark text-lg" />
+          </button>
+        </div>
+
+        <div className="overflow-y-auto px-5 py-4 sm:px-6">
+          {loading ? (
+            <div className="space-y-3">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="skeleton h-20 w-full rounded-xl" />
+              ))}
+            </div>
+          ) : error ? (
+            <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+              <i className="fa-solid fa-triangle-exclamation mr-2" />
+              {error}
+            </div>
+          ) : submissions.length === 0 ? (
+            <div className="py-10 text-center">
+              <i className="fa-regular fa-folder-open mb-3 block text-4xl text-slate-300" />
+              <p className="font-semibold text-slate-700">ยังไม่มีผู้ส่งเกียรติบัตรในหลักสูตรนี้</p>
+              <p className="mt-1 text-sm text-slate-400">เมื่อมีการส่งไฟล์ รายชื่อจะแสดงในหน้านี้</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {submissions.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 transition-colors hover:border-primary-200 hover:bg-primary-50/40 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div className="min-w-0">
+                    <p className="font-semibold text-slate-900">{item.teacher_name}</p>
+                    <p className="mt-1 text-sm text-slate-500">
+                      <i className="fa-solid fa-building-columns mr-1.5 text-slate-400" />
+                      {item.department} · {item.position}
+                    </p>
+                    <p className="mt-1 text-xs text-slate-400">
+                      <i className="fa-regular fa-clock mr-1.5" />
+                      ส่งเมื่อ {formatDate(item.submitted_at)} · {formatFileSize(item.file_size)}
+                    </p>
+                  </div>
+                  <a
+                    href={`/api/certificates/${item.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn-secondary h-10 flex-shrink-0 px-4 text-sm"
+                  >
+                    <i className="fa-solid fa-file-pdf text-red-500" />
+                    เปิดเกียรติบัตร
+                  </a>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [selectedCourseId, setSelectedCourseId] = useState<number | null>(null);
+  const [courseSubmissions, setCourseSubmissions] = useState<DashboardCourseSubmission[]>([]);
+  const [courseLoading, setCourseLoading] = useState(false);
+  const [courseError, setCourseError] = useState('');
+
+  const selectedCourse = COURSES.find((course) => course.id === selectedCourseId) ?? null;
+
+  const openCourseDetails = async (courseId: number) => {
+    setSelectedCourseId(courseId);
+    setCourseSubmissions([]);
+    setCourseError('');
+    setCourseLoading(true);
+
+    try {
+      const res = await fetch(`/api/dashboard/courses/${courseId}`);
+      const json: ApiResponse<DashboardCourseSubmission[]> = await res.json();
+      if (!json.success) {
+        setCourseError(json.error ?? 'ไม่สามารถโหลดรายชื่อผู้ส่งได้');
+        return;
+      }
+      setCourseSubmissions(json.data ?? []);
+    } catch {
+      setCourseError('ไม่สามารถโหลดรายชื่อผู้ส่งได้');
+    } finally {
+      setCourseLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetch('/api/dashboard')
@@ -173,17 +306,22 @@ export default function DashboardPage() {
                   ? 'bg-amber-100 text-amber-700'
                   : 'bg-slate-100 text-slate-600';
                 return (
-                  <div key={course.id}
-                    className="animate-fade-in"
+                  <button key={course.id}
+                    type="button"
+                    onClick={() => openCourseDetails(course.id)}
+                    className="group block w-full rounded-xl p-2 text-left transition-all hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 animate-fade-in"
                     style={{ animationDelay: `${idx * 60}ms`, animationFillMode: 'both' }}>
                     <div className="flex items-center justify-between mb-2 gap-2">
                       <div className="flex items-center gap-2 min-w-0">
-                        <span className="flex-shrink-0 w-7 h-7 rounded-lg bg-primary-100 text-primary-700 text-xs font-bold flex items-center justify-center">
+                        <span className="flex-shrink-0 w-7 h-7 rounded-lg bg-primary-100 text-primary-700 text-xs font-bold flex items-center justify-center transition-colors group-hover:bg-primary-600 group-hover:text-white">
                           {course.id}
                         </span>
                         <span className="text-sm font-medium text-slate-700 truncate">{course.name}</span>
                         <span className="hidden sm:inline text-xs text-slate-400 flex-shrink-0">
                           <i className="fa-regular fa-clock mr-1" />{course.duration} ชม.
+                        </span>
+                        <span className="hidden md:inline-flex items-center gap-1 text-xs font-medium text-primary-600 opacity-0 transition-opacity group-hover:opacity-100">
+                          <i className="fa-solid fa-user-check" />ดูรายชื่อ
                         </span>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
@@ -193,6 +331,7 @@ export default function DashboardPage() {
                         <span className={`badge ${badgeClass} tabular-nums`}>
                           <AnimatedCounter value={pct} suffix="%" />
                         </span>
+                        <i className="fa-solid fa-chevron-right text-xs text-slate-300 transition-colors group-hover:text-primary-500" />
                       </div>
                     </div>
                     <AnimatedBar
@@ -201,7 +340,7 @@ export default function DashboardPage() {
                       delay={idx * 80 + 200}
                       height="h-3"
                     />
-                  </div>
+                  </button>
                 );
               })}
             </div>
@@ -316,6 +455,20 @@ export default function DashboardPage() {
         </div>
 
       </main>
+      {selectedCourse && stats && (
+        <CourseSubmissionsModal
+          course={selectedCourse}
+          totalTeachers={stats.total_teachers}
+          submissions={courseSubmissions}
+          loading={courseLoading}
+          error={courseError}
+          onClose={() => {
+            setSelectedCourseId(null);
+            setCourseSubmissions([]);
+            setCourseError('');
+          }}
+        />
+      )}
     </div>
   );
 }
