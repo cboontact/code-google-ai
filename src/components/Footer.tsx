@@ -5,10 +5,9 @@ export default function Footer() {
         <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 mb-2">
           <span className="text-sm text-slate-600 flex items-center gap-2">
             <i className="fas fa-bolt text-blue-500"></i>
-            Powered by <span className="font-semibold text-slate-800">Chonnatee Boonta</span>
+            <span className="font-semibold text-slate-800">Chonnatee Boonta</span>
           </span>
           <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-500">เทคโนโลยี:</span>
             <div className="flex items-center gap-3">
               <span className="relative group inline-flex">
                 <svg className="w-4 h-4" viewBox="0 0 128 128" aria-label="Next.js">
